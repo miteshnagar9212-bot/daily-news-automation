@@ -1,8 +1,9 @@
 name: Daily News Email
 
 on:
+  push:
   schedule:
-    - cron: '*/5 * * * *'   # 8:00 AM IST
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 jobs:
