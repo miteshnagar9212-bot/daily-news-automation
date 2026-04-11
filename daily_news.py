@@ -1,3 +1,4 @@
+print("API KEY:", os.getenv("OPENAI_API_KEY"))
 import feedparser
 import urllib.parse
 import os
