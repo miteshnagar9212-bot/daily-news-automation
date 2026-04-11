@@ -12,16 +12,17 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 def generate_summary(text):
     try:
         response = openai.ChatCompletion.create(
-    model="gpt-4o-mini",
-    messages=[
-        {"role": "user", "content": f"Summarize this in 2 lines:\n{text}"}
-    ]
-)
-return response["choices"][0]["message"]["content"].strip()
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "user", "content": f"Summarize this in 2 lines:\n{text}"}
+            ]
+        )
+
+        return response["choices"][0]["message"]["content"].strip()
+
     except Exception as e:
         print("OPENAI ERROR:", e)
-    return "Summary not available"
-
+        return "Summary not available"
 # 📰 Fetch news
 def fetch_news(keyword):
     encoded_keyword = urllib.parse.quote(keyword)
