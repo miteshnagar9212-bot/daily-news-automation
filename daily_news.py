@@ -4,26 +4,10 @@ import os
 import json
 import smtplib
 from email.mime.text import MIMEText
-from openai import OpenAI
 
-# ✅ OpenAI setup (NEW version)
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-# 🧠 AI summary
+# 🧠 Simple summary (no OpenAI)
 def generate_summary(text):
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "user", "content": f"Summarize this in 2 lines:\n{text}"}
-            ]
-        )
-
-        return response.choices[0].message.content.strip()
-
-    except Exception as e:
-        print("OPENAI ERROR FULL:", str(e))  # 👈 important
-        raise  # 👈 this will FAIL the job and show full error
+    return text  # just use title as summary
 
 # 📰 Fetch news
 def fetch_news(keyword):
@@ -67,16 +51,19 @@ def get_all_news():
 
     return all_news
 
-# 📧 Format email
+# 📧 Format email (clean format)
 def format_email(news):
-    content = "Daily Investment News\n\n"
+    content = "📰 Daily Investment News\n\n"
+
+    current_category = ""
 
     for item in news:
-        content += f"{item['category']}\n"
-        content += f"{item['title']}\n"
-        content += f"{item['link']}\n"
-        content += f"{item['summary']}\n"
-        content += "-" * 40 + "\n\n"
+        if item["category"] != current_category:
+            current_category = item["category"]
+            content += f"\n=== {current_category} ===\n\n"
+
+        content += f"• {item['title']}\n"
+        content += f"{item['link']}\n\n"
 
     return content
 
