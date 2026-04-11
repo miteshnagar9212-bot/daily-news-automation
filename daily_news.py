@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Daily News Automation with AI Summaries + Dashboard JSON
-"""
-
-print("PROGRAM STARTED")
-
 import feedparser
 import urllib.parse
 import os
@@ -13,10 +6,10 @@ import smtplib
 from email.mime.text import MIMEText
 from openai import OpenAI
 
-# ✅ OpenAI setup
+# 🔑 OpenAI setup
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# 🔹 Generate AI Summary
+# 🧠 AI summary
 def generate_summary(text):
     try:
         response = client.chat.completions.create(
@@ -27,27 +20,31 @@ def generate_summary(text):
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
-        print("Summary error:", e)
         return "Summary not available"
 
-# 🔹 Fetch news from Google RSS
+# 📰 Fetch news
 def fetch_news(keyword):
     encoded_keyword = urllib.parse.quote(keyword)
     url = f"https://news.google.com/rss/search?q={encoded_keyword}"
-    
+
     feed = feedparser.parse(url)
-    
+
     articles = []
-    
+
     for entry in feed.entries[:5]:
+        title = entry.title
+        link = entry.link
+        summary = generate_summary(title)
+
         articles.append({
-            "title": entry.title,
-            "link": entry.link
+            "title": title,
+            "link": link,
+            "summary": summary
         })
-        
+
     return articles
 
-# 🔹 Categories
+# 📊 Categories
 categories = {
     "Private Equity": "private equity",
     "Private Credit": "private credit",
@@ -55,86 +52,66 @@ categories = {
     "Infrastructure": "infrastructure investment"
 }
 
-# 🔹 Get all news
+# 🧾 Get all news
 def get_all_news():
-    all_news = {}
-    
+    all_news = []
+
     for category, keyword in categories.items():
         news = fetch_news(keyword)
-        all_news[category] = news
-        
+
+        for article in news:
+            article["category"] = category
+            all_news.append(article)
+
     return all_news
 
-# 🔹 Format email
-def format_email(news_dict):
-    content = "Daily Alternative Investment News\n\n"
-    
-    for category, articles in news_dict.items():
-        content += f"{category}\n"
-        content += "-" * 30 + "\n"
-        
-        for article in articles:
-            content += f"{article['title']}\n"
-            content += f"{article['link']}\n\n"
-            
+# 📧 Format email
+def format_email(news):
+    content = "Daily Investment News\n\n"
+
+    for item in news:
+        content += f"{item['category']}\n"
+        content += f"{item['title']}\n"
+        content += f"{item['link']}\n"
+        content += f"{item['summary']}\n"
+        content += "-" * 40 + "\n\n"
+
     return content
 
-# 🔹 Send email (using GitHub secrets)
+# 📬 Send email
 def send_email(body):
     sender = os.getenv("EMAIL_USER")
     receiver = os.getenv("EMAIL_USER")
     password = os.getenv("EMAIL_PASS")
-    
+
     msg = MIMEText(body)
     msg["Subject"] = "Daily Investment News"
     msg["From"] = sender
     msg["To"] = receiver
-    
+
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
         server.login(sender, password)
         server.send_message(msg)
 
-# 🔹 Main function
+# 🚀 Main function
 def run_daily():
-    print("Step 1: Starting function")
-
+    print("Fetching news...")
     news = get_all_news()
-    print("Step 2: News fetched")
 
-    all_news = []
-
-    for category, articles in news.items():
-        for article in articles:
-            title = article["title"]
-            link = article["link"]
-
-            summary = generate_summary(title)
-
-            all_news.append({
-                "category": category,
-                "title": title,
-                "link": link,
-                "summary": summary
-            })
-
-    # ✅ Save JSON for dashboard
+    print("Saving JSON...")
     with open("news_data.json", "w") as f:
-        json.dump(all_news, f, indent=2)
+        json.dump(news, f, indent=2)
 
-    print("Step 3: News saved for dashboard")
-
-    # ✅ Send email
+    print("Sending email...")
     email_body = format_email(news)
-    print("Step 4: Email formatted")
-
     send_email(email_body)
-    print("Step 5: Email sent")
 
-# 🔹 Run script
-print("Starting script...")
+    print("Done!")
 
-try:
-    run_daily()
-    print("Finished successfully")
-except Exception as e:
-    print("Error:", e)
+# ▶️ Run
+if __name__ == "__main__":
+    try:
+        run_daily()
+    except Exception as e:
+        print("Error:", e)
+        raise
