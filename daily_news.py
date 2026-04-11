@@ -1,9 +1,22 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sat Apr  4 21:51:53 2026
-
-@author: mites
+Daily News Automation with AI Summaries + Dashboard JSON
 """
+
+print("PROGRAM STARTED")
+
+import feedparser
+import urllib.parse
+import os
+import json
+import smtplib
+from email.mime.text import MIMEText
+from openai import OpenAI
+
+# ✅ OpenAI setup
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# 🔹 Generate AI Summary
 def generate_summary(text):
     try:
         response = client.chat.completions.create(
@@ -14,16 +27,12 @@ def generate_summary(text):
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
+        print("Summary error:", e)
         return "Summary not available"
-print("PROGRAM STARTED")
-import feedparser
-import urllib.parse  # <-- ADD THIS LINE
-import os
-from openai import OpenAI
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# 🔹 Fetch news from Google RSS
 def fetch_news(keyword):
-    encoded_keyword = urllib.parse.quote(keyword)  # <-- NEW LINE
+    encoded_keyword = urllib.parse.quote(keyword)
     url = f"https://news.google.com/rss/search?q={encoded_keyword}"
     
     feed = feedparser.parse(url)
@@ -32,19 +41,21 @@ def fetch_news(keyword):
     
     for entry in feed.entries[:5]:
         articles.append({
-          title = entry.title
-link = entry.link
-
-summary = generate_summary(title)
+            "title": entry.title,
+            "link": entry.link
         })
         
     return articles
+
+# 🔹 Categories
 categories = {
     "Private Equity": "private equity",
     "Private Credit": "private credit",
     "Real Estate": "real estate investment",
     "Infrastructure": "infrastructure investment"
 }
+
+# 🔹 Get all news
 def get_all_news():
     all_news = {}
     
@@ -53,6 +64,8 @@ def get_all_news():
         all_news[category] = news
         
     return all_news
+
+# 🔹 Format email
 def format_email(news_dict):
     content = "Daily Alternative Investment News\n\n"
     
@@ -65,13 +78,12 @@ def format_email(news_dict):
             content += f"{article['link']}\n\n"
             
     return content
-import smtplib
-from email.mime.text import MIMEText
 
+# 🔹 Send email (using GitHub secrets)
 def send_email(body):
-    sender = "mitesh.nagar9212@gmail.com"
-    receiver = "mitesh.nagar9212@gmail.com"
-    password = "zfzgrtfclnzdbjpm"
+    sender = os.getenv("EMAIL_USER")
+    receiver = os.getenv("EMAIL_USER")
+    password = os.getenv("EMAIL_PASS")
     
     msg = MIMEText(body)
     msg["Subject"] = "Daily Investment News"
@@ -81,42 +93,44 @@ def send_email(body):
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
         server.login(sender, password)
         server.send_message(msg)
-import json  # add at top if not already
 
+# 🔹 Main function
 def run_daily():
     print("Step 1: Starting function")
 
     news = get_all_news()
     print("Step 2: News fetched")
 
-    # 🔥 NEW: Add AI summary + structured data
     all_news = []
 
-    for item in news:
-        title = item["title"]
-        link = item["link"]
+    for category, articles in news.items():
+        for article in articles:
+            title = article["title"]
+            link = article["link"]
 
-        summary = generate_summary(title)
+            summary = generate_summary(title)
 
-        all_news.append({
-            "title": title,
-            "link": link,
-            "summary": summary
-        })
+            all_news.append({
+                "category": category,
+                "title": title,
+                "link": link,
+                "summary": summary
+            })
 
-    # ✅ SAVE for dashboard
+    # ✅ Save JSON for dashboard
     with open("news_data.json", "w") as f:
         json.dump(all_news, f, indent=2)
 
     print("Step 3: News saved for dashboard")
 
-    # ✅ KEEP your email logic
+    # ✅ Send email
     email_body = format_email(news)
     print("Step 4: Email formatted")
 
     send_email(email_body)
     print("Step 5: Email sent")
 
+# 🔹 Run script
 print("Starting script...")
 
 try:
@@ -124,4 +138,3 @@ try:
     print("Finished successfully")
 except Exception as e:
     print("Error:", e)
-    # activate scheduler v2
