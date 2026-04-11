@@ -20,7 +20,8 @@ def generate_summary(text):
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
-        return "Summary not available"
+    print("OPENAI ERROR:", e)
+    return "Summary not available"
 
 # 📰 Fetch news
 def fetch_news(keyword):
