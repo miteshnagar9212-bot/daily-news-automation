@@ -4,34 +4,33 @@ import os
 import json
 import smtplib
 from email.mime.text import MIMEText
-import openai
+from openai import OpenAI
 
-print("API KEY:", os.getenv("OPENAI_API_KEY"))  # ✅ move here
-
-openai.api_key = os.getenv("OPENAI_API_KEY")
+# ✅ OpenAI setup (NEW version)
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # 🧠 AI summary
 def generate_summary(text):
     try:
-        response = openai.ChatCompletion.create(
+        response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "user", "content": f"Summarize this in 2 lines:\n{text}"}
             ]
         )
 
-        return response["choices"][0]["message"]["content"].strip()
+        return response.choices[0].message.content.strip()
 
     except Exception as e:
         print("OPENAI ERROR:", e)
         return "Summary not available"
+
 # 📰 Fetch news
 def fetch_news(keyword):
     encoded_keyword = urllib.parse.quote(keyword)
     url = f"https://news.google.com/rss/search?q={encoded_keyword}"
 
     feed = feedparser.parse(url)
-
     articles = []
 
     for entry in feed.entries[:5]:
