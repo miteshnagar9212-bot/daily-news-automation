@@ -4,10 +4,9 @@ import os
 import json
 import smtplib
 from email.mime.text import MIMEText
-from openai import OpenAI
+import openai
 
-# 🔑 OpenAI setup
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # 🧠 AI summary
 def generate_summary(text):
