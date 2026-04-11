@@ -1,61 +1,59 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Daily News Dashboard</title>
+    <title>Daily Investment News</title>
     <style>
         body {
             font-family: Arial;
-            background: #f5f5f5;
             padding: 20px;
+            background: #f5f5f5;
         }
         h1 {
-            text-align: center;
+            color: #333;
         }
         .card {
             background: white;
             padding: 15px;
-            margin: 10px 0;
-            border-radius: 10px;
+            margin-bottom: 15px;
+            border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        .category {
-            color: blue;
-            font-weight: bold;
-        }
         a {
-            color: green;
+            text-decoration: none;
+            color: #0077cc;
+        }
+        p {
+            color: #555;
         }
     </style>
 </head>
-
 <body>
 
-<h1>📰 Daily News Dashboard</h1>
+<h1>📰 Daily Investment News</h1>
 
-<div id="news-container"></div>
+<div id="news"></div>
 
 <script>
 fetch('news_data.json')
     .then(response => response.json())
     .then(data => {
-        const container = document.getElementById('news-container');
+        const container = document.getElementById('news');
 
-        data.forEach(item => {
+        data.forEach(article => {
             const div = document.createElement('div');
             div.className = 'card';
 
             div.innerHTML = `
-                <div class="category">${item.category}</div>
-                <h3>${item.title}</h3>
-                <p>${item.summary}</p>
-                <a href="${item.link}" target="_blank">Read more</a>
+                <h3><a href="${article.link}" target="_blank">${article.title}</a></h3>
+                <p>${article.summary}</p>
             `;
 
             container.appendChild(div);
         });
     })
-    .catch(error => {
-        console.error("Error loading JSON:", error);
+    .catch(err => {
+        document.getElementById('news').innerHTML = "Error loading news.";
+        console.error(err);
     });
 </script>
 
