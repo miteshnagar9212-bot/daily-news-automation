@@ -1,4 +1,3 @@
-print("API KEY:", os.getenv("OPENAI_API_KEY"))
 import feedparser
 import urllib.parse
 import os
@@ -6,6 +5,8 @@ import json
 import smtplib
 from email.mime.text import MIMEText
 import openai
+
+print("API KEY:", os.getenv("OPENAI_API_KEY"))  # ✅ move here
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
