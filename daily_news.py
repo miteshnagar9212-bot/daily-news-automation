@@ -1,36 +1,22 @@
 import feedparser
 import urllib.parse
 import os
-import json
 import smtplib
 from email.mime.text import MIMEText
+import google.generativeai as genai
 
-# 🧠 Simple summary (no OpenAI)
-def generate_summary(text):
-    return text  # just use title as summary
+# =========================
+# GEMINI SETUP
+# =========================
 
-# 📰 Fetch news
-def fetch_news(keyword):
-    encoded_keyword = urllib.parse.quote(keyword)
-    url = f"https://news.google.com/rss/search?q={encoded_keyword}"
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-    feed = feedparser.parse(url)
-    articles = []
+model = genai.GenerativeModel("gemini-1.5-flash")
 
-    for entry in feed.entries[:5]:
-        title = entry.title
-        link = entry.link
-        summary = generate_summary(title)
+# =========================
+# FETCH NEWS
+# =========================
 
-        articles.append({
-            "title": title,
-            "link": link,
-            "summary": summary
-        })
-
-    return articles
-
-# 📊 Categories
 categories = {
     "Private Equity": "private equity",
     "Private Credit": "private credit",
@@ -38,7 +24,26 @@ categories = {
     "Infrastructure": "infrastructure investment"
 }
 
-# 🧾 Get all news
+def fetch_news(keyword):
+    encoded_keyword = urllib.parse.quote(keyword)
+    url = f"https://news.google.com/rss/search?q={encoded_keyword}"
+
+    feed = feedparser.parse(url)
+
+    articles = []
+
+    for entry in feed.entries[:5]:
+        articles.append({
+            "title": entry.title,
+            "link": entry.link
+        })
+
+    return articles
+
+# =========================
+# GET ALL NEWS
+# =========================
+
 def get_all_news():
     all_news = []
 
@@ -51,30 +56,77 @@ def get_all_news():
 
     return all_news
 
-# 📧 Format email (clean format)
-def format_email(news):
-    content = "📰 Daily Investment News\n\n"
+# =========================
+# AI SUMMARY
+# =========================
 
-    current_category = ""
+def generate_market_summary(news):
+
+    combined_text = ""
 
     for item in news:
-        if item["category"] != current_category:
-            current_category = item["category"]
-            content += f"\n=== {current_category} ===\n\n"
+        combined_text += f"""
+Category: {item['category']}
+Headline: {item['title']}
+Link: {item['link']}
+"""
 
-        content += f"• {item['title']}\n"
+    prompt = f"""
+You are an investment research analyst.
+
+Analyze the following news and provide:
+
+1. Executive Summary
+2. Key Market Themes
+3. Important Risks
+4. Important Opportunities
+5. 5 Key Takeaways
+
+Keep it concise, professional, and easy to read.
+
+News:
+{combined_text}
+"""
+
+    response = model.generate_content(prompt)
+
+    return response.text
+
+# =========================
+# FORMAT EMAIL
+# =========================
+
+def format_email(summary, news):
+
+    content = "DAILY INVESTMENT INTELLIGENCE REPORT\n"
+    content += "=" * 50 + "\n\n"
+
+    content += summary
+    content += "\n\n"
+    content += "=" * 50 + "\n"
+    content += "SOURCE ARTICLES\n"
+    content += "=" * 50 + "\n\n"
+
+    for item in news:
+        content += f"[{item['category']}]\n"
+        content += f"{item['title']}\n"
         content += f"{item['link']}\n\n"
 
     return content
 
-# 📬 Send email
+# =========================
+# SEND EMAIL
+# =========================
+
 def send_email(body):
+
     sender = os.getenv("EMAIL_USER")
     receiver = os.getenv("EMAIL_USER")
     password = os.getenv("EMAIL_PASS")
 
     msg = MIMEText(body)
-    msg["Subject"] = "Daily Investment News"
+
+    msg["Subject"] = "Daily Investment Intelligence Report"
     msg["From"] = sender
     msg["To"] = receiver
 
@@ -82,25 +134,29 @@ def send_email(body):
         server.login(sender, password)
         server.send_message(msg)
 
-# 🚀 Main function
+# =========================
+# MAIN
+# =========================
+
 def run_daily():
+
     print("Fetching news...")
     news = get_all_news()
 
-    print("Saving JSON...")
-    with open("news_data.json", "w") as f:
-        json.dump(news, f, indent=2)
+    print("Generating AI summary...")
+    summary = generate_market_summary(news)
+
+    print("Formatting email...")
+    email_body = format_email(summary, news)
 
     print("Sending email...")
-    email_body = format_email(news)
     send_email(email_body)
 
     print("Done!")
 
-# ▶️ Run
+# =========================
+# RUN
+# =========================
+
 if __name__ == "__main__":
-    try:
-        run_daily()
-    except Exception as e:
-        print("Error:", e)
-        raise
+    run_daily()
