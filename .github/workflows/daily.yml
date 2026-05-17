@@ -21,14 +21,15 @@ jobs:
 
       - name: Install dependencies
         run: |
-    pip install feedparser google-generativeai
+          pip install feedparser google-generativeai
 
       - name: Run script
         run: python daily_news.py
         env:
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
           EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
       - name: Commit and push JSON
         run: |
           git config --global user.name "github-actions"
