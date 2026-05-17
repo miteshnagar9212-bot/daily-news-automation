@@ -67,40 +67,12 @@ def get_all_news():
 
 def generate_market_summary(news):
 
-    combined_text = ""
+    summary = "TOP MARKET DEVELOPMENTS\n\n"
 
-    for item in news:
+    for item in news[:10]:
+        summary += f"- {item['title']}\n"
 
-        combined_text += f"""
-Category: {item['category']}
-Headline: {item['title']}
-Link: {item['link']}
-
-"""
-
-    prompt = f"""
-You are an investment research analyst.
-
-Analyze the following news and provide:
-
-1. Executive Summary
-2. Key Market Themes
-3. Important Risks
-4. Important Opportunities
-5. 5 Key Takeaways
-
-Keep it concise, professional, and easy to read.
-
-News:
-{combined_text}
-"""
-
-    response = client.models.generate_content(
-        model="gemini-2.0-flash",
-        contents=prompt
-    )
-
-    return response.text
+    return summary
 
 # =========================
 # FORMAT EMAIL
