@@ -3,15 +3,13 @@ import urllib.parse
 import os
 import smtplib
 from email.mime.text import MIMEText
-import google.generativeai as genai
+from google import genai
 
 # =========================
 # GEMINI SETUP
 # =========================
 
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-
-model = genai.GenerativeModel("gemini-pro")
+client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 
 # =========================
 # FETCH NEWS
@@ -25,7 +23,9 @@ categories = {
 }
 
 def fetch_news(keyword):
+
     encoded_keyword = urllib.parse.quote(keyword)
+
     url = f"https://news.google.com/rss/search?q={encoded_keyword}"
 
     feed = feedparser.parse(url)
@@ -33,6 +33,7 @@ def fetch_news(keyword):
     articles = []
 
     for entry in feed.entries[:5]:
+
         articles.append({
             "title": entry.title,
             "link": entry.link
@@ -45,13 +46,17 @@ def fetch_news(keyword):
 # =========================
 
 def get_all_news():
+
     all_news = []
 
     for category, keyword in categories.items():
+
         news = fetch_news(keyword)
 
         for article in news:
+
             article["category"] = category
+
             all_news.append(article)
 
     return all_news
@@ -65,10 +70,12 @@ def generate_market_summary(news):
     combined_text = ""
 
     for item in news:
+
         combined_text += f"""
 Category: {item['category']}
 Headline: {item['title']}
 Link: {item['link']}
+
 """
 
     prompt = f"""
@@ -88,7 +95,10 @@ News:
 {combined_text}
 """
 
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=prompt
+    )
 
     return response.text
 
@@ -103,11 +113,13 @@ def format_email(summary, news):
 
     content += summary
     content += "\n\n"
+
     content += "=" * 50 + "\n"
     content += "SOURCE ARTICLES\n"
     content += "=" * 50 + "\n\n"
 
     for item in news:
+
         content += f"[{item['category']}]\n"
         content += f"{item['title']}\n"
         content += f"{item['link']}\n\n"
@@ -131,7 +143,9 @@ def send_email(body):
     msg["To"] = receiver
 
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+
         server.login(sender, password)
+
         server.send_message(msg)
 
 # =========================
@@ -141,15 +155,19 @@ def send_email(body):
 def run_daily():
 
     print("Fetching news...")
+
     news = get_all_news()
 
     print("Generating AI summary...")
+
     summary = generate_market_summary(news)
 
     print("Formatting email...")
+
     email_body = format_email(summary, news)
 
     print("Sending email...")
+
     send_email(email_body)
 
     print("Done!")
@@ -159,4 +177,5 @@ def run_daily():
 # =========================
 
 if __name__ == "__main__":
+
     run_daily()
